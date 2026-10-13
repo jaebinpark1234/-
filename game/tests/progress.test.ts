@@ -30,7 +30,8 @@ describe('applyRoundOutcome', () => {
 
   it('데일리 연속 기록: 이어지면 +1, 하루 건너뛰면 1로', () => {
     const s = defaultSave();
-    const daily = (d: number) => applyRoundOutcome(s, { mode: 'daily', level: 0, win: true, score: d, coins: 0 }, day(d));
+    const daily = (d: number) =>
+      applyRoundOutcome(s, { mode: 'daily', level: 0, win: true, score: d, coins: 0 }, day(d));
     daily(1);
     daily(2);
     daily(2); // 같은 날 두 번은 한 번으로 친다

@@ -3,9 +3,7 @@
  * 파일이 없거나 로딩에 실패해도 게임은 돌아간다. 이미지는 PreloadScene이 임시 도형으로 대신 그리고,
  * 소리는 audio.ts가 조용히 건너뛴다.
  */
-export type AssetEntry =
-  | { type: 'image'; key: string; path: string }
-  | { type: 'audio'; key: string; path: string[] };
+export type AssetEntry = { type: 'image'; key: string; path: string } | { type: 'audio'; key: string; path: string[] };
 
 export const ASSETS: AssetEntry[] = [
   // 예시:

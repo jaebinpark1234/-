@@ -7,6 +7,12 @@ import { playSfx } from '../services/audio';
 import { Button } from '../ui/Button';
 
 export interface RoundResult extends RoundOutcome {
+  /** 결과 화면 두 번째 줄. 이기면 완성된 그림 이름을 보여 준다. */
+  subtitle?: string;
+  /** 거치대를 한 번도 안 쓴 승리. */
+  perfect: boolean;
+  /** 승리 화면에서 '광고 보고 2배'를 보여 줄지. 눈에 띄는 승리에만 보여 줘서 광고 피로를 줄인다. */
+  offerDouble: boolean;
   /** 졌을 때 보상형 광고로 이어하기를 허용할지. 한 판에 한 번만 허용하는 게 보통이다. */
   canContinue: boolean;
 }
@@ -22,6 +28,7 @@ export const RoundEvents = {
 export class ResultScene extends Phaser.Scene {
   private result!: RoundResult;
   private leaving = false;
+  private rewardedOffered = false;
 
   constructor() {
     super(SceneKeys.Result);
@@ -30,6 +37,7 @@ export class ResultScene extends Phaser.Scene {
   init(data: RoundResult): void {
     this.result = data;
     this.leaving = false;
+    this.rewardedOffered = false;
   }
 
   create(): void {
@@ -46,38 +54,55 @@ export class ResultScene extends Phaser.Scene {
     panel.fillStyle(THEME.panel, 1).fillRoundedRect(60, 300, GAME_WIDTH - 120, 720, 36);
 
     this.add
-      .text(cx, 400, i18n.t(r.win ? 'result.win' : 'result.lose'), {
+      .text(cx, 400, i18n.t(r.win ? (r.perfect ? 'result.perfect' : 'result.win') : 'result.lose'), {
         fontFamily: THEME.font,
         fontSize: '72px',
         fontStyle: 'bold',
         color: r.win ? '#3ddc97' : '#ff5d6c',
       })
       .setOrigin(0.5);
-    this.add
-      .text(cx, 490, String(r.score), { fontFamily: THEME.font, fontSize: '56px', color: THEME.text })
-      .setOrigin(0.5);
+    if (r.subtitle) {
+      this.add
+        .text(cx, 490, r.subtitle, { fontFamily: THEME.font, fontSize: '48px', color: THEME.text })
+        .setOrigin(0.5);
+    }
 
     if (r.win && r.coins > 0) {
+      this.rewardedOffered = r.offerDouble;
       const coinText = this.add
-        .text(cx, 560, i18n.t('result.coins', { n: r.coins }), { fontFamily: THEME.font, fontSize: '36px', color: '#ffc845' })
+        .text(cx, 560, i18n.t('result.coins', { n: r.coins }), {
+          fontFamily: THEME.font,
+          fontSize: '36px',
+          color: '#ffc845',
+        })
         .setOrigin(0.5);
-      const doubleBtn = new Button(this, cx, 680, i18n.t('result.double'), async () => {
-        doubleBtn.setEnabled(false);
-        const res = await getServices().ads.showRewarded();
-        analytics.track('rewarded_double', { result: res, level: r.level });
-        if (res === 'rewarded') {
-          save.update((d) => {
-            d.coins += r.coins;
-          });
-          coinText.setText(i18n.t('result.coins', { n: r.coins * 2 }));
-          playSfx(this, SFX.coin);
-        } else {
-          doubleBtn.setEnabled(true);
-        }
-      }, { color: THEME.accent, textColor: '#1b1d2b', fontSize: 34, width: 480, prefix: '▶ ' });
+      if (r.offerDouble) {
+        const doubleBtn = new Button(
+          this,
+          cx,
+          680,
+          i18n.t('result.double'),
+          async () => {
+            doubleBtn.setEnabled(false);
+            const res = await getServices().ads.showRewarded();
+            analytics.track('rewarded_double', { result: res, level: r.level });
+            if (res === 'rewarded') {
+              save.update((d) => {
+                d.coins += r.coins;
+              });
+              coinText.setText(i18n.t('result.coins', { n: r.coins * 2 }));
+              playSfx(this, SFX.coin);
+            } else {
+              doubleBtn.setEnabled(true);
+            }
+          },
+          { color: THEME.accent, textColor: '#1b1d2b', fontSize: 34, width: 480, prefix: '▶ ' },
+        );
+      }
     }
 
     if (!r.win && r.canContinue) {
+      this.rewardedOffered = true;
       new Button(this, cx, 680, i18n.t('result.continue'), () => void this.continueWithAd(), {
         color: THEME.accent,
         textColor: '#1b1d2b',
@@ -112,8 +137,9 @@ export class ResultScene extends Phaser.Scene {
   private async leave(target: typeof SceneKeys.Game | typeof SceneKeys.Menu): Promise<void> {
     if (this.leaving) return;
     this.leaving = true;
-    const { ads, save } = getServices();
-    await ads.maybeShowInterstitial(save.get().level);
+    const { ads } = getServices();
+    // 전면 광고는 이긴 뒤 넘어갈 때만. 같은 화면에서 보상형 광고를 제안했다면 건너뛴다(CrazyGames 규칙).
+    if (this.result.win && !this.rewardedOffered) await ads.maybeShowInterstitial(this.result.level);
     this.scene.stop(SceneKeys.Game);
     this.scene.start(target, { mode: this.result.mode });
   }

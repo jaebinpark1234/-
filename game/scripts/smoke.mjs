@@ -26,8 +26,7 @@ page.on('response', (r) => {
   if (r.status() >= 400) errors.push(`HTTP ${r.status()} ${r.url()}`);
 });
 
-const activeScenes = () =>
-  page.evaluate(() => window.__game?.scene.getScenes(true).map((s) => s.scene.key) ?? []);
+const activeScenes = () => page.evaluate(() => window.__game?.scene.getScenes(true).map((s) => s.scene.key) ?? []);
 
 async function waitForScene(key, timeout = 10000) {
   const start = Date.now();
@@ -53,18 +52,19 @@ try {
   await tapGame(360, 760);
   await waitForScene('Game');
   await page.waitForTimeout(600);
-  await page.screenshot({ path: `${OUT}/02-game.png` });
+  await page.screenshot({ path: `${OUT}/02-game-start.png` });
 
-  // 장르별 자동 플레이는 window.__smoke 훅이 있으면 그걸 쓴다.
+  // GameScene이 노출하는 자동 플레이 훅(봇)으로 끝까지 둔다. 중간에 한 장 찍는다.
   const hasAutoplay = await page.evaluate(() => typeof window.__smoke?.autoplay === 'function');
-  if (hasAutoplay) {
-    await page.evaluate(() => window.__smoke.autoplay());
-  } else {
-    await tapGame(360, 640);
-  }
-  await waitForScene('Result', 20000);
+  if (!hasAutoplay) throw new Error('window.__smoke.autoplay missing');
+  await page.evaluate(() => {
+    window.__smoke.autoplay(220);
+  });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${OUT}/03-playing.png` });
+  await waitForScene('Result', 30000);
   await page.waitForTimeout(400);
-  await page.screenshot({ path: `${OUT}/03-result.png` });
+  await page.screenshot({ path: `${OUT}/04-result.png` });
 
   if (errors.length) throw new Error(`browser errors:\n${errors.join('\n')}`);
   console.log('SMOKE OK', url);

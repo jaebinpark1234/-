@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ASSETS } from '../config/assets';
 import { GAME_HEIGHT, GAME_WIDTH, SceneKeys, THEME } from '../config/game';
 import { getServices } from '../services';
+import { makeGameTextures } from '../ui/textures';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -16,11 +17,18 @@ export class PreloadScene extends Phaser.Scene {
     const track = this.add.graphics().fillStyle(THEME.panel, 1).fillRoundedRect(x, y, barW, 18, 9);
     const bar = this.add.graphics();
     this.add
-      .text(GAME_WIDTH / 2, y - 50, i18n.t('common.loading'), { fontFamily: THEME.font, fontSize: '32px', color: THEME.textDim })
+      .text(GAME_WIDTH / 2, y - 50, i18n.t('common.loading'), {
+        fontFamily: THEME.font,
+        fontSize: '32px',
+        color: THEME.textDim,
+      })
       .setOrigin(0.5);
 
     this.load.on('progress', (p: number) => {
-      bar.clear().fillStyle(THEME.primary, 1).fillRoundedRect(x, y, Math.max(18, barW * p), 18, 9);
+      bar
+        .clear()
+        .fillStyle(THEME.primary, 1)
+        .fillRoundedRect(x, y, Math.max(18, barW * p), 18, 9);
     });
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
       console.warn('[preload] missing asset, using placeholder:', file.key);
@@ -35,6 +43,7 @@ export class PreloadScene extends Phaser.Scene {
 
   create(): void {
     this.makePlaceholders();
+    makeGameTextures(this);
     getServices().ads.loadingFinished();
     this.scene.start(SceneKeys.Menu);
   }
