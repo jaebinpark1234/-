@@ -10,6 +10,23 @@
 - 모바일 앱은 나중에 Capacitor로 감싼다. 웹 코드가 그대로 앱이 된다.
 - Phaser 4 API가 헷갈리면 `node_modules/phaser/skills/`의 공식 가이드를 먼저 본다. v3 예제를 그대로 베끼면 안 되는 부분은 `v3-to-v4-migration/SKILL.md`에 정리돼 있다.
 
+## 이 게임
+
+드론 팩을 쇼 순서대로 하늘에 띄워 숨은 그림을 완성하는 정렬 퍼즐이다. 규칙과 설계 이유는 `docs/GDD.md`.
+
+| 파일 | 하는 일 |
+|---|---|
+| `src/core/rules.ts` | 게임 규칙의 기준. 탭 한 번 → 상태 변경 + 연출용 이벤트 목록 |
+| `src/core/levelgen.ts` | 그림 → 쇼 순서 → 상자 배치 → 난이도 맞추기 |
+| `src/core/solver.ts` | 모든 팩을 아는 상태의 정확한 해법 탐색. 레벨이 풀리는지 보장 |
+| `src/core/bot.ts` | '?'를 모르는 봇. 난이도 측정, 스모크 테스트, 자동 플레이 |
+| `src/core/difficulty.ts` | 레벨 번호 → 생성 파라미터와 목표치 |
+| `src/core/pictures.ts` | 그림 데이터(ASCII) |
+| `src/config/balance.ts` | 코인, 부스터 가격, 보너스 |
+| `src/scenes/GameScene.ts` | 판 그리기, 드론 연출, 입력, 그림 맞히기, 결과 연결 |
+
+규칙을 바꾸면 `rules.ts`, `solver.ts`, `bot.ts`를 같이 봐야 한다. 해법 탐색기는 "상자별 남은 높이가 같으면 나머지 상태도 같다"는 전제로 기억을 줄인다. 이 전제를 깨는 규칙(예: 블로커)을 넣으면 기억 키도 바꾼다.
+
 ## 명령어
 
 ```bash
@@ -18,7 +35,9 @@ npm run dev        # 개발 서버
 npm test           # 단위 테스트
 npm run typecheck  # 타입 검사
 npm run build      # 타입 검사 + 배포 빌드(dist/)
-npm run smoke      # build 후 실행. 실제 브라우저로 메뉴→게임→결과 흐름 확인, artifacts/에 스크린샷
+npm run smoke      # build 후 실행. 실제 브라우저로 메뉴→게임(봇 자동 플레이)→결과 확인, artifacts/에 스크린샷
+npm run report -- 1 100   # 레벨별 난이도 수치(필요 거치대 칸, 봇 승률, 생성 시간)
+npm run format     # prettier
 ```
 
 작업을 끝냈다고 말하기 전에 `npm test && npm run build && npm run smoke`가 모두 통과해야 한다.

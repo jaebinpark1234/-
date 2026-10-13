@@ -19,13 +19,13 @@ export interface AdPolicy {
   interstitialFromLevel: number;
   /** 전면 광고 사이 최소 간격(초). */
   interstitialMinGapSec: number;
-  /** N판마다 한 번만 전면 광고 후보가 된다. */
+  /** maybeShowInterstitial 호출(= 이긴 판) N번마다 한 번만 전면 광고 후보가 된다. */
   interstitialEveryNRounds: number;
 }
 
 export const DEFAULT_AD_POLICY: AdPolicy = {
-  interstitialFromLevel: 4,
-  interstitialMinGapSec: 90,
+  interstitialFromLevel: 8,
+  interstitialMinGapSec: 120,
   interstitialEveryNRounds: 3,
 };
 

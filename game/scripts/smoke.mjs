@@ -1,6 +1,7 @@
 // 실제 브라우저로 빌드 결과를 띄워 메뉴 → 게임 → 결과 흐름이 돌아가는지 확인하고 스크린샷을 남긴다.
 // 사용법: npm run build && npm run smoke
 // CHROMIUM_PATH로 브라우저 경로를 바꿀 수 있다.
+import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright-core';
 import { preview } from 'vite';
@@ -11,8 +12,11 @@ await mkdir(OUT, { recursive: true });
 const server = await preview({ preview: { port: 4173, strictPort: false }, logLevel: 'warn' });
 const url = server.resolvedUrls?.local?.[0] ?? 'http://localhost:4173/';
 
+// 경로를 안 주면 Claude 클라우드 환경의 크로미움, 그것도 없으면 Playwright가 설치한 기본 브라우저를 쓴다.
+const defaultPath = '/opt/pw-browsers/chromium';
+const executablePath = process.env.CHROMIUM_PATH ?? (existsSync(defaultPath) ? defaultPath : undefined);
 const browser = await chromium.launch({
-  executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
+  executablePath,
   args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
 });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true });
