@@ -14,7 +14,7 @@
 - [ ] **NAME-1 🧑 P0 최종 이름 정하기**
   후보를 3~5개 정해서 KIPRIS(kipris.or.kr), USPTO, Google Play·App Store·Poki·CrazyGames 검색으로 겹치는 이름이 없는지 본다. 정한 뒤 `src/scenes/MenuScene.ts`의 `GAME_TITLE`과 `index.html`의 `<title>`을 바꾼다. "Swarm", 군사 느낌 단어, "SkyShow"(SkyShowtime과 겹침)는 피한다.
 
-- [ ] **QA-1 💻 P0 GitHub Actions로 자동 검사**
+- [x] **QA-1 💻 P0 GitHub Actions로 자동 검사**
   `game/`에서 `npm ci && npm test && npm run build && npm run smoke`를 PR마다 돌린다. 크로미움은 `npx playwright-core install --with-deps chromium`로 설치한다. `CHROMIUM_PATH`를 주지 않으면 smoke 스크립트가 Playwright 기본 경로의 브라우저를 쓴다.
   완료 기준: PR에 초록 체크가 뜬다.
 
