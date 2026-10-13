@@ -73,20 +73,91 @@ export class MenuScene extends Phaser.Scene {
         .setOrigin(0.5);
     }
 
-    const soundLabel = (): string =>
-      `${i18n.t('settings.sound')}: ${i18n.t(save.get().settings.sound ? 'settings.on' : 'settings.off')}`;
-    const soundBtn: Button = new Button(
+    new Button(
       this,
       cx,
       GAME_HEIGHT - 110,
-      soundLabel(),
+      i18n.t('settings.title'),
       () => {
-        save.update((d) => {
-          d.settings.sound = !d.settings.sound;
-        });
-        soundBtn.setText(soundLabel());
+        playSfx(this, SFX.tap);
+        this.openSettings();
       },
       { width: 300, height: 76, fontSize: 28, color: 0x3a3f5c },
     );
+  }
+
+  /** 효과음, 음악, 진동, 언어. 언어를 바꾸면 메뉴를 다시 그린다. */
+  private openSettings(): void {
+    const { i18n, save } = getServices();
+    const cx = GAME_WIDTH / 2;
+    const layer = this.add.container(0, 0).setDepth(10);
+    // 뒤쪽 버튼이 눌리지 않게 화면 전체를 덮는다.
+    const shade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.6).setOrigin(0).setInteractive();
+    const panel = this.add.rectangle(cx, GAME_HEIGHT / 2, 600, 820, THEME.panel).setStrokeStyle(4, 0x3a3f5c);
+    const title = this.add
+      .text(cx, GAME_HEIGHT / 2 - 330, i18n.t('settings.title'), {
+        fontFamily: THEME.font,
+        fontSize: '52px',
+        fontStyle: 'bold',
+        color: THEME.text,
+      })
+      .setOrigin(0.5);
+    layer.add([shade, panel, title]);
+
+    type Toggle = 'sound' | 'music' | 'haptics';
+    const toggles: [Toggle, 'settings.sound' | 'settings.music' | 'settings.haptics'][] = [
+      ['sound', 'settings.sound'],
+      ['music', 'settings.music'],
+      ['haptics', 'settings.haptics'],
+    ];
+    const label = (key: Toggle, text: Parameters<typeof i18n.t>[0]): string =>
+      `${i18n.t(text)}: ${i18n.t(save.get().settings[key] ? 'settings.on' : 'settings.off')}`;
+    toggles.forEach(([key, text], i) => {
+      const btn: Button = new Button(
+        this,
+        cx,
+        GAME_HEIGHT / 2 - 200 + i * 120,
+        label(key, text),
+        () => {
+          save.update((d) => {
+            d.settings[key] = !d.settings[key];
+          });
+          btn.setText(label(key, text));
+          playSfx(this, SFX.tap);
+        },
+        { width: 460, height: 96, fontSize: 34, color: 0x3a3f5c },
+      );
+      layer.add(btn);
+    });
+
+    // 언어 이름은 번역하지 않고 그 언어로 쓴다.
+    const langNames = { ko: '한국어', en: 'English' } as const;
+    const langBtn = new Button(
+      this,
+      cx,
+      GAME_HEIGHT / 2 + 160,
+      `${i18n.t('settings.lang')}: ${langNames[i18n.lang]}`,
+      () => {
+        const next = i18n.lang === 'ko' ? 'en' : 'ko';
+        save.update((d) => {
+          d.settings.lang = next;
+        });
+        i18n.lang = next;
+        this.scene.restart();
+      },
+      { width: 460, height: 96, fontSize: 34, color: 0x3a3f5c },
+    );
+    const close = new Button(
+      this,
+      cx,
+      GAME_HEIGHT / 2 + 310,
+      i18n.t('settings.close'),
+      () => {
+        playSfx(this, SFX.tap);
+        layer.destroy();
+      },
+      { width: 300, height: 86, fontSize: 32 },
+    );
+    layer.add([langBtn, close]);
   }
 }
