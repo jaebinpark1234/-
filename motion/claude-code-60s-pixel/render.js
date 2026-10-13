@@ -1,6 +1,6 @@
 // 사용법
 //   node render.js frames <L|V> <outDir> <t1,t2,...>     지정한 시각의 프레임을 3배 확대 PNG로 저장
-//   node render.js video  <L|V> <fps> <out.mp4> [workers] 무음 영상 (1920x1080 또는 1080x1920)
+//   node render.js video  <L|V> <fps> <out.mp4> [workers] [up]  무음 영상 (기본 1920x1080/1080x1920, up=16이면 가로 4K)
 //   node render.js thumb  <out.png>                       썸네일 (1920x1080)
 //   node render.js cues   <out.json>                      효과음 큐
 // 픽셀 아트라 원본 해상도(240x135/180x320)로 찍고 ffmpeg가 nearest-neighbor로 키운다(8배/6배).
@@ -12,7 +12,8 @@ const { chromium } = require('playwright');
 
 const ROOT = __dirname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.woff2': 'font/woff2' };
-const UP = o => (o === 'V' ? 6 : 8);
+let UPX = 0;
+const UP = o => UPX || (o === 'V' ? 6 : 8);
 
 function serve() {
   return new Promise(resolve => {
@@ -82,6 +83,7 @@ async function renderRange(browser, port, o, fps, f0, f1, out) {
     } else if (cmd === 'video') {
       const [o, fps, out] = [a[0], +a[1], a[2]];
       const workers = +(a[3] || 4);
+      UPX = +(a[4] || 0);
       const probe = await openPage(browser, port, o, 'render');
       const total = Math.round(probe.dur * fps);
       await probe.close();
