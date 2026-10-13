@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Code: Bug Hunt</title>
+<style>
+@font-face{font-family:'Plex';src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2');font-weight:400}
+@font-face{font-family:'Plex';src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format('woff2');font-weight:500}
+@font-face{font-family:'Plex';src:url(fonts/ibm-plex-mono-latin-700-normal.woff2) format('woff2');font-weight:700}
+html,body{margin:0;background:#000;overflow:hidden}
+canvas{display:block}
+body.preview{display:flex;align-items:center;justify-content:center;height:100vh}
+body.preview canvas{max-width:100vw;max-height:100vh;width:auto;height:auto}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="vendor/rough.js"></script>
+<script src="scene.js"></script>
+</body>
+</html>
