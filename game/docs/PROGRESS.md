@@ -1,5 +1,14 @@
 # 진행 상황
 
+## 테스트 배포
+
+- 공개 주소: https://night-drone-show.tlqkfha0000.workers.dev (로그인 없이 누구나)
+- Cloudflare Worker `night-drone-show`에 정적 파일만 올린다. 교시온과 같은 계정, 같은 wrangler 직접 배포 방식이다.
+- 다시 올리기: `cd game && npm run build && npx wrangler deploy --assets dist --name night-drone-show --compatibility-date 2026-09-01`
+- wrangler 4의 `pages` 명령은 Workers로 넘기면서 패키지 설치와 설정 파일 생성을 요구해서 쓰지 않았다.
+- claude.ai 아티팩트(주인 전용): https://claude.ai/artifact/8Wwy5Gc6eYS9hpxHqECfgm
+- beta 3: 미니멀 디자인. beta 4: 홈 화면 추가(manifest, 아이콘), 그림 완성 불꽃
+
 ## beta 1 (2026-10-14)
 
 - 테스트 링크: https://claude.ai/artifact/8Wwy5Gc6eYS9hpxHqECfgm (같은 링크에 다시 올리면 새 버전이 된다)
