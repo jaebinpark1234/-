@@ -58,8 +58,8 @@ export class ResultScene extends Phaser.Scene {
       .text(cx, 400, i18n.t(r.win ? (r.perfect ? 'result.perfect' : 'result.win') : 'result.lose'), {
         fontFamily: THEME.font,
         fontSize: '72px',
-        fontStyle: 'bold',
-        color: r.win ? '#3ddc97' : '#ff5d6c',
+        fontStyle: '500',
+        color: r.win ? THEME.text : '#ff8a8a',
       })
       .setOrigin(0.5);
     if (r.subtitle) {
@@ -74,7 +74,7 @@ export class ResultScene extends Phaser.Scene {
         .text(cx, 560, i18n.t('result.coins', { n: r.coins }), {
           fontFamily: THEME.font,
           fontSize: '36px',
-          color: '#ffc845',
+          color: THEME.accentCss,
         })
         .setOrigin(0.5);
       if (r.offerDouble) {
@@ -97,7 +97,7 @@ export class ResultScene extends Phaser.Scene {
               doubleBtn.setEnabled(true);
             }
           },
-          { color: THEME.accent, textColor: '#1b1d2b', fontSize: 34, width: 480, prefix: '▶ ' },
+          { color: THEME.accent, fontSize: 34, width: 480, prefix: '▶ ' },
         );
       }
     }
@@ -106,7 +106,6 @@ export class ResultScene extends Phaser.Scene {
       this.rewardedOffered = true;
       new Button(this, cx, 680, i18n.t('result.continue'), () => void this.continueWithAd(), {
         color: THEME.accent,
-        textColor: '#1b1d2b',
         fontSize: 34,
         width: 480,
         prefix: '▶ ',
@@ -117,7 +116,7 @@ export class ResultScene extends Phaser.Scene {
     new Button(this, cx, 820, primaryLabel, () => void this.leave(SceneKeys.Game), { width: 480 });
     new Button(this, cx, 940, i18n.t('result.home'), () => void this.leave(SceneKeys.Menu), {
       width: 480,
-      color: 0x3a3f5c,
+      variant: 'ghost',
       fontSize: 36,
       height: 90,
     });

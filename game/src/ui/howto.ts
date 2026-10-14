@@ -7,7 +7,7 @@ import { playSfx } from '../services/audio';
 import type { StringKey } from '../services/i18n';
 import { glassPanel } from './backdrop';
 import { Button } from './Button';
-import { DRONE_SIZE, TextureKeys } from './textures';
+import { DRONE_SIZE, TextureKeys, tapHint } from './textures';
 
 const PAGES: {
   title: StringKey;
@@ -28,17 +28,17 @@ const ART_Y = 450;
 export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
   const { i18n } = getServices();
   const root = scene.add.container(0, 0).setDepth(1000);
-  const shade = scene.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x03040c, 0.78).setOrigin(0).setInteractive();
+  const shade = scene.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x05070f, 0.82).setOrigin(0).setInteractive();
   root.add([shade, glassPanel(scene.add.graphics(), PANEL.x, PANEL.y, PANEL.w, PANEL.h, 36)]);
 
   const title = scene.add
-    .text(CX, PANEL.y + 80, '', { fontFamily: THEME.font, fontSize: '46px', fontStyle: 'bold', color: THEME.text })
+    .text(CX, PANEL.y + 80, '', { fontFamily: THEME.font, fontSize: '44px', fontStyle: '300', color: THEME.text })
     .setOrigin(0.5);
   const body = scene.add
     .text(CX, 720, '', {
       fontFamily: THEME.font,
       fontSize: '27px',
-      color: '#d8dcff',
+      color: THEME.textDim,
       align: 'center',
       lineSpacing: 12,
       wordWrap: { width: PANEL.w - 70 },
@@ -110,9 +110,8 @@ export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
 function crate(scene: Phaser.Scene, x: number, baseY: number, colors: (number | '?')[], w = 120, ph = 52) {
   const g = scene.add.graphics();
   const h = colors.length * ph + 30;
-  g.fillStyle(0x2a3060, 1).fillRoundedRect(x - w / 2, baseY - h, w, h + 14, 16);
-  g.fillStyle(0x0f1230, 1).fillRoundedRect(x - w / 2 + 7, baseY - h + 7, w - 14, h - 10, 10);
-  g.fillStyle(0x8f95ff, 0.8).fillRect(x - w / 2 + 12, baseY + 4, w - 24, 3);
+  g.fillStyle(THEME.panel, 1).fillRoundedRect(x - w / 2, baseY - h, w, h + 10, 16);
+  g.lineStyle(2, THEME.line, 1).strokeRoundedRect(x - w / 2, baseY - h, w, h + 10, 16);
   const packs = colors.map((c, j) =>
     scene.add
       .image(x, baseY - 10 - ph / 2 - j * ph, c === '?' ? TextureKeys.packHidden : TextureKeys.pack(c))
@@ -121,10 +120,8 @@ function crate(scene: Phaser.Scene, x: number, baseY: number, colors: (number | 
   return { g, packs, topY: baseY - 10 - ph / 2 - (colors.length - 1) * ph };
 }
 
-function finger(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Image {
-  const f = scene.add.image(x, y, TextureKeys.finger).setOrigin(0.36, 0).setScale(0.75);
-  scene.tweens.add({ targets: f, y: y + 18, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-  return f;
+function finger(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
+  return tapHint(scene, x, y);
 }
 
 function drawTapPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container): void {
@@ -151,7 +148,7 @@ function drawTapPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container): 
     });
     layer.add(d);
   }
-  layer.add(finger(scene, CX + 10, c.topY + 6));
+  layer.add(finger(scene, CX + 10, c.topY));
 }
 
 function drawOrderPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container): void {
@@ -171,13 +168,13 @@ function drawOrderPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container)
       .text(190, y - 42, i18n.t('game.now'), {
         fontFamily: THEME.font,
         fontSize: '20px',
-        fontStyle: 'bold',
+        fontStyle: '500',
         color: THEME.textDim,
       })
       .setOrigin(0.5),
     scene.add.image(190, y + 6, TextureKeys.pack(0)).setDisplaySize(104, 65),
     scene.add
-      .text(254, y + 6, '0/2', { fontFamily: THEME.font, fontSize: '32px', fontStyle: 'bold', color: THEME.text })
+      .text(254, y + 6, '0/2', { fontFamily: THEME.font, fontSize: '32px', fontStyle: '500', color: THEME.text })
       .setOrigin(0, 0.5),
     scene.add
       .image(400, y + 6, TextureKeys.pack(5))
@@ -191,7 +188,7 @@ function drawOrderPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container)
   // 아래 상자 둘: 빨강이 맨 위인 쪽을 누르라고 가리킨다.
   const a = crate(scene, CX - 110, ART_Y + 200, [3, 5], 116, 50);
   const b = crate(scene, CX + 110, ART_Y + 200, [5, 0], 116, 50);
-  layer.add([a.g, ...a.packs, b.g, ...b.packs, finger(scene, CX + 120, b.topY + 6)]);
+  layer.add([a.g, ...a.packs, b.g, ...b.packs, finger(scene, CX + 120, b.topY)]);
 }
 
 function drawRackPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container): void {
@@ -203,8 +200,8 @@ function drawRackPage(scene: Phaser.Scene, layer: Phaser.GameObjects.Container):
   for (let k = 0; k < 5; k++) {
     const x = left + k * (slotW + gap);
     const g = scene.add.graphics();
-    g.fillStyle(0x070816, 1).fillRoundedRect(x - slotW / 2, y - 32, slotW, 64, 12);
-    g.lineStyle(4, THEME.danger, 1).strokeRoundedRect(x - slotW / 2, y - 32, slotW, 64, 12);
+    g.fillStyle(0x000000, 0.25).fillRoundedRect(x - slotW / 2, y - 32, slotW, 64, 12);
+    g.lineStyle(2, THEME.danger, 1).strokeRoundedRect(x - slotW / 2, y - 32, slotW, 64, 12);
     scene.tweens.add({ targets: g, alpha: 0.45, duration: 500, yoyo: true, repeat: -1 });
     layer.add(g);
     const c = filled[k];

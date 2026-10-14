@@ -42,10 +42,15 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.makePlaceholders();
-    makeGameTextures(this);
-    getServices().ads.loadingFinished();
-    this.scene.start(SceneKeys.Menu);
+    // 캔버스 글자는 그리는 순간의 글꼴로 굳으므로 웹 글꼴을 먼저 받는다. 늦으면 1.5초 뒤 시스템 글꼴로 시작한다.
+    const fonts = ['300', '400', '500', '600'].map((w) => document.fonts?.load(`${w} 32px "Noto Sans KR"`));
+    const timeout = new Promise((r) => setTimeout(r, 1500));
+    void Promise.race([Promise.allSettled(fonts), timeout]).then(() => {
+      this.makePlaceholders();
+      makeGameTextures(this);
+      getServices().ads.loadingFinished();
+      this.scene.start(SceneKeys.Menu);
+    });
   }
 
   /** 아직 그림이 없는 키는 단색 도형으로 만들어 둔다. 실제 PNG가 들어오면 그게 우선이다. */

@@ -12,7 +12,8 @@ export const TextureKeys = {
   packHidden: 'pack-hidden',
   drone: 'drone',
   dot: 'dot',
-  finger: 'finger',
+  /** 튜토리얼 탭 표시(고리) */
+  finger: 'tap-ring',
 } as const;
 
 /**
@@ -23,19 +24,17 @@ export function makeGameTextures(scene: Phaser.Scene): void {
   PALETTE.forEach((c, i) => {
     canvasTexture(scene, TextureKeys.pack(i), PACK_W, PACK_H, (ctx) => {
       drawBlock(ctx, c.hex);
-      drawSymbol(ctx, c.symbol, PACK_W / 2, BLOCK_FACE_H / 2 + 2, 30, c.hex);
+      drawSymbol(ctx, c.symbol, PACK_W / 2, BLOCK_FACE_H / 2 + 2, 24, c.hex);
     });
   });
 
   canvasTexture(scene, TextureKeys.packHidden, PACK_W, PACK_H, (ctx) => {
-    drawBlock(ctx, 0x5a6080);
-    ctx.font = 'bold 64px system-ui, sans-serif';
+    drawBlock(ctx, 0x343c5e);
+    ctx.font = '300 60px "Noto Sans KR", system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillText('?', PACK_W / 2, BLOCK_FACE_H / 2 + 6);
-    ctx.fillStyle = '#e4e7ff';
-    ctx.fillText('?', PACK_W / 2, BLOCK_FACE_H / 2 + 2);
+    ctx.fillStyle = 'rgba(238,240,247,0.75)';
+    ctx.fillText('?', PACK_W / 2, BLOCK_FACE_H / 2 + 4);
   });
 
   // 가운데 하얀 점 + 바깥으로 퍼지는 빛. 흰색으로 만들고 setTint로 색을 입힌다.
@@ -60,34 +59,13 @@ export function makeGameTextures(scene: Phaser.Scene): void {
     ctx.fillRect(0, 0, 16, 16);
   });
 
-  // 튜토리얼 손가락. 끝이 위쪽 가운데(0.36, 0)를 가리킨다.
-  canvasTexture(scene, TextureKeys.finger, 120, 150, (ctx) => {
-    ctx.lineJoin = 'round';
-    const shape = () => {
-      ctx.beginPath();
-      ctx.roundRect(30, 6, 28, 84, 14); // 검지
-      ctx.roundRect(58, 52, 24, 46, 12);
-      ctx.roundRect(82, 58, 22, 42, 11);
-      ctx.roundRect(14, 64, 22, 40, 11); // 엄지
-      ctx.roundRect(22, 72, 84, 70, 26); // 손바닥
-    };
-    ctx.save();
-    ctx.translate(4, 6);
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    shape();
-    ctx.fill();
-    ctx.restore();
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = '#1b1d2b';
-    shape();
-    ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    shape();
-    ctx.fill();
-    ctx.fillStyle = 'rgba(160,170,210,0.35)';
+  // 튜토리얼에서 누를 곳에 퍼지는 고리. 흰색 원 테두리.
+  canvasTexture(scene, TextureKeys.finger, 128, 128, (ctx) => {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.roundRect(22, 118, 84, 24, 12);
-    ctx.fill();
+    ctx.arc(64, 64, 58, 0, Math.PI * 2);
+    ctx.stroke();
   });
 }
 
@@ -121,42 +99,24 @@ export function shadeHex(hex: number, amount: number): number {
   return (mix((hex >> 16) & 0xff) << 16) | (mix((hex >> 8) & 0xff) << 8) | mix(hex & 0xff);
 }
 
-const BLOCK_FACE_H = PACK_H - 22;
+const BLOCK_FACE_H = PACK_H - 12;
 
-/** 윗면과 두께가 보이는 블록. 아래쪽 22px이 옆면(그림자 쪽)이다. */
+/** 무광 타일. 아래쪽에 얇은 두께만 보이고 광택은 넣지 않는다. */
 function drawBlock(ctx: CanvasRenderingContext2D, hex: number): void {
-  const r = 26;
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  const r = 22;
+  ctx.fillStyle = shade(hex, -0.32);
   ctx.beginPath();
-  ctx.roundRect(4, 14, PACK_W - 8, PACK_H - 14, r);
+  ctx.roundRect(4, 10, PACK_W - 8, PACK_H - 12, r);
   ctx.fill();
-
-  ctx.fillStyle = shade(hex, -0.38);
+  ctx.fillStyle = shade(hex, 0);
   ctx.beginPath();
-  ctx.roundRect(4, 10, PACK_W - 8, PACK_H - 16, r);
+  ctx.roundRect(4, 2, PACK_W - 8, BLOCK_FACE_H, r);
   ctx.fill();
-
-  const face = ctx.createLinearGradient(0, 4, 0, BLOCK_FACE_H);
-  face.addColorStop(0, shade(hex, 0.32));
-  face.addColorStop(0.55, shade(hex, 0));
-  face.addColorStop(1, shade(hex, -0.12));
-  ctx.fillStyle = face;
-  ctx.beginPath();
-  ctx.roundRect(4, 4, PACK_W - 8, BLOCK_FACE_H, r);
-  ctx.fill();
-
-  const gloss = ctx.createLinearGradient(0, 8, 0, 40);
-  gloss.addColorStop(0, 'rgba(255,255,255,0.45)');
-  gloss.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gloss;
-  ctx.beginPath();
-  ctx.roundRect(16, 9, PACK_W - 32, 30, 15);
-  ctx.fill();
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(5, 5, PACK_W - 10, BLOCK_FACE_H - 2, r - 1);
+  ctx.moveTo(4 + r, 3);
+  ctx.lineTo(PACK_W - 4 - r, 3);
   ctx.stroke();
 }
 
@@ -169,9 +129,7 @@ function drawSymbol(
   r: number,
   bg: number,
 ): void {
-  ctx.fillStyle = shade(bg, -0.45, 0.6);
-  symbolPath(ctx, symbol, x, y + 4, r, bg, true);
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
   symbolPath(ctx, symbol, x, y, r, bg, false);
 }
 
@@ -243,7 +201,7 @@ function symbolPath(
       const fill = ctx.fillStyle;
       circle(x, y, r * 0.85);
       if (!isShadow) {
-        ctx.fillStyle = shade(bg, 0.05);
+        ctx.fillStyle = shade(bg, 0);
         circle(x + r * 0.4, y - r * 0.2, r * 0.7);
         ctx.fillStyle = fill;
       }
@@ -260,4 +218,15 @@ function symbolPath(
       ]);
       break;
   }
+}
+
+/** 누를 곳을 알려 주는 표시: 가운데 점 + 퍼져 나가는 고리. */
+export function tapHint(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
+  const box = scene.add.container(x, y);
+  const dot = scene.add.circle(0, 0, 9, 0xffffff, 0.95);
+  const ring = scene.add.image(0, 0, TextureKeys.finger).setScale(0.15).setAlpha(0.9);
+  scene.tweens.add({ targets: ring, scale: 0.6, alpha: 0, duration: 1000, repeat: -1, ease: 'Quad.easeOut' });
+  scene.tweens.add({ targets: dot, scale: 0.75, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  box.add([ring, dot]);
+  return box;
 }

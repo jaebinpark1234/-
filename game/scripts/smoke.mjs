@@ -53,7 +53,7 @@ try {
   await waitForScene('Menu');
   await page.screenshot({ path: `${OUT}/01-menu.png` });
 
-  await tapGame(360, 760);
+  await tapGame(360, 930); // 메뉴의 시작 버튼(MenuScene)
   await waitForScene('Game');
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${OUT}/02-game-start.png` });
