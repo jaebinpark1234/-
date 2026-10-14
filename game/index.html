@@ -16,20 +16,9 @@
     />
     <title>밤하늘 드론쇼 beta 3</title>
     <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        height: 100dvh;
-        background: #0b0f1e;
-        overflow: hidden;
-        touch-action: none;
-      }
-      #game {
-        width: 100%;
-        height: 100%;
-      }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; touch-action: none; background: #0b0f1e; }
+      /* iOS의 iframe 안에서는 vh가 바깥 화면 기준으로 잡혀 게임이 잘린다. 창에 고정해서 크기를 받는다. */
+      #game { position: fixed; inset: 0; }
     </style>
   </head>
   <body>
