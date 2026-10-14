@@ -197,7 +197,7 @@ function deliver(
 
     const next = level.cues[s.cueIndex];
     if (!next) break;
-    for (let i = 0; i < s.rack.length && s.delivered < next.packs; ) {
+    for (let i = 0; i < s.rack.length && s.delivered < next.packs;) {
       const p = s.rack[i] as Pack;
       if (p.color !== next.color) {
         i++;

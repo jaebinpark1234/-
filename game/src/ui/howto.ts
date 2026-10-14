@@ -21,8 +21,8 @@ const PAGES: {
 ];
 
 const CX = GAME_WIDTH / 2;
-const PANEL = { x: 40, y: 170, w: GAME_WIDTH - 80, h: 940 };
-const ART_Y = 500;
+const PANEL = { x: 40, y: 130, w: GAME_WIDTH - 80, h: 880 };
+const ART_Y = 450;
 
 /** 처음 하는 사람용 규칙 안내. 4장을 넘기며 보고, 닫으면 onClose를 부른다. */
 export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
@@ -35,7 +35,7 @@ export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
     .text(CX, PANEL.y + 80, '', { fontFamily: THEME.font, fontSize: '46px', fontStyle: 'bold', color: THEME.text })
     .setOrigin(0.5);
   const body = scene.add
-    .text(CX, 800, '', {
+    .text(CX, 720, '', {
       fontFamily: THEME.font,
       fontSize: '27px',
       color: '#d8dcff',
@@ -57,7 +57,7 @@ export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
   const next = new Button(
     scene,
     CX,
-    PANEL.y + PANEL.h - 90,
+    PANEL.y + PANEL.h - 64,
     '',
     () => {
       if (page === PAGES.length - 1) return close();
@@ -76,6 +76,12 @@ export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
     .setInteractive({ useHandCursor: true })
     .on('pointerup', close);
   root.add([next, skip]);
+  // 버튼을 못 찾거나 화면 아래가 잘려도 넘길 수 있게, 안내 화면 아무 곳이나 눌러도 다음 장으로 간다.
+  shade.on('pointerup', () => {
+    if (page === PAGES.length - 1) return close();
+    playSfx(scene, SFX.tap);
+    show(page + 1);
+  });
 
   function show(n: number): void {
     page = n;
@@ -91,7 +97,7 @@ export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
     PAGES.forEach((_, k) => {
       dots
         .fillStyle(k === n ? 0xffffff : 0x5a6090, 1)
-        .fillCircle(CX + (k - 1.5) * 28, PANEL.y + PANEL.h - 170, k === n ? 8 : 6);
+        .fillCircle(CX + (k - 1.5) * 28, PANEL.y + PANEL.h - 140, k === n ? 8 : 6);
     });
     art.setAlpha(0);
     scene.tweens.add({ targets: art, alpha: 1, duration: 200 });

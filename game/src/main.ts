@@ -42,5 +42,12 @@ game = new Phaser.Game({
   scene: [BootScene, PreloadScene, MenuScene, GameScene, ResultScene],
 });
 
+// 아티팩트 뷰어나 앱 안의 웹뷰는 처음 뜬 뒤에 크기가 바뀌곤 한다. 그때 터치 좌표가 어긋나지 않게 다시 맞춘다.
+const refit = () => game?.scale.refresh();
+const host = document.getElementById('game');
+if (host && 'ResizeObserver' in window) new ResizeObserver(refit).observe(host);
+window.visualViewport?.addEventListener('resize', refit);
+window.setTimeout(refit, 500);
+
 // 스모크 테스트와 디버깅용. 배포 빌드에서도 해가 없다.
 (window as unknown as { __game?: Phaser.Game }).__game = game;

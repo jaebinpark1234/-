@@ -46,7 +46,8 @@ const L = {
   boosterY: 1230,
 } as const;
 
-const RACK_SLOT = { w: 64, h: 40, gap: 8 };
+/** 거치대 칸. 폭은 칸 수에 맞춰 slotW()가 정한다(최대 9칸까지 늘어남). */
+const RACK_SLOT = { maxW: 84, h: 52, gap: 10 };
 
 type PackSprite = Phaser.GameObjects.Image | Phaser.GameObjects.Container;
 
@@ -219,7 +220,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private crateWidth(): number {
-    return Math.min(86, (GAME_WIDTH - 32) / this.level.crates.length);
+    return Math.min(132, (GAME_WIDTH - 32) / this.level.crates.length);
   }
 
   /** 처음 배치에서 가장 높은 상자. 되돌리기로 팩이 돌아와도 이 높이를 넘지 않는다. */
@@ -228,17 +229,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   private packHeight(): number {
-    return Math.min(38, (L.crateBase - L.crateTop) / this.maxDepth);
+    return Math.min(56, (L.crateBase - L.crateTop) / this.maxDepth);
   }
 
   private packPos(crate: number, index: number): { x: number; y: number } {
     return { x: this.crateX(crate), y: L.crateBase - (index + 0.5) * this.packHeight() };
   }
 
+  private slotW(): number {
+    return Math.min(RACK_SLOT.maxW, (GAME_WIDTH - 40) / this.state.rackCapacity - RACK_SLOT.gap);
+  }
+
   private rackSlotX(slot: number): number {
     const cap = this.state.rackCapacity;
-    const total = cap * (RACK_SLOT.w + RACK_SLOT.gap) - RACK_SLOT.gap;
-    return (GAME_WIDTH - total) / 2 + slot * (RACK_SLOT.w + RACK_SLOT.gap) + RACK_SLOT.w / 2;
+    const total = cap * (this.slotW() + RACK_SLOT.gap) - RACK_SLOT.gap;
+    return (GAME_WIDTH - total) / 2 + slot * (this.slotW() + RACK_SLOT.gap) + this.slotW() / 2;
   }
 
   private drawCrateZones(): void {
@@ -369,18 +374,18 @@ export class GameScene extends Phaser.Scene {
     for (let k = 0; k < s.rackCapacity; k++) {
       const x = this.rackSlotX(k);
       const slot = this.add.graphics();
-      const sx = x - RACK_SLOT.w / 2;
+      const sx = x - this.slotW() / 2;
       const sy = L.rackY - RACK_SLOT.h / 2;
-      slot.fillStyle(0xffffff, 0.06).fillRoundedRect(sx - 2, sy - 2, RACK_SLOT.w + 4, RACK_SLOT.h + 6, 12);
-      slot.fillStyle(0x070816, 1).fillRoundedRect(sx, sy, RACK_SLOT.w, RACK_SLOT.h, 10);
-      slot.fillStyle(0x000000, 0.5).fillRoundedRect(sx + 3, sy + 2, RACK_SLOT.w - 6, 8, 4);
+      slot.fillStyle(0xffffff, 0.06).fillRoundedRect(sx - 2, sy - 2, this.slotW() + 4, RACK_SLOT.h + 6, 12);
+      slot.fillStyle(0x070816, 1).fillRoundedRect(sx, sy, this.slotW(), RACK_SLOT.h, 10);
+      slot.fillStyle(0x000000, 0.5).fillRoundedRect(sx + 3, sy + 2, this.slotW() - 6, 8, 4);
       slot
         .lineStyle(3, warn ? THEME.danger : 0x3d4378, warn ? 1 : 0.9)
-        .strokeRoundedRect(sx, sy, RACK_SLOT.w, RACK_SLOT.h, 10);
+        .strokeRoundedRect(sx, sy, this.slotW(), RACK_SLOT.h, 10);
       this.boardLayer.add(slot);
     }
     s.rack.forEach((pack, k) => {
-      const img = this.packImage(pack, this.rackSlotX(k), L.rackY - 2, RACK_SLOT.w - 6, RACK_SLOT.h);
+      const img = this.packImage(pack, this.rackSlotX(k), L.rackY - 2, this.slotW() - 6, RACK_SLOT.h);
       if (this.arriving.has(pack.id)) img.setAlpha(0);
       this.rackSprites.set(pack.id, img);
       this.boardLayer.add(img);
@@ -505,7 +510,7 @@ export class GameScene extends Phaser.Scene {
   private flyPackToRack(pack: Pack, from: { x: number; y: number }, slot: number): void {
     const img = this.add
       .image(from.x, from.y, TextureKeys.pack(pack.color))
-      .setDisplaySize(RACK_SLOT.w - 6, RACK_SLOT.h);
+      .setDisplaySize(this.slotW() - 6, RACK_SLOT.h);
     this.fxLayer.add(img);
     this.flights++;
     this.tweens.add({
