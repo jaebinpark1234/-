@@ -12,7 +12,7 @@ import { DRONE_SIZE, TextureKeys } from '../ui/textures';
 // 가제. 상표 검색(KIPRIS, USPTO, 스토어 검색) 뒤에 확정한다. docs/LAUNCH.md 참고.
 export const GAME_TITLE = { ko: '밤하늘 드론쇼', en: 'Night Sky Show' };
 /** 테스트 빌드 표시. 정식 출시 때 빈 문자열로 둔다. */
-export const BUILD_LABEL = 'beta 3';
+export const BUILD_LABEL = 'beta 4';
 
 export class MenuScene extends Phaser.Scene {
   constructor() {

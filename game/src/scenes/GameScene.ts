@@ -641,6 +641,7 @@ export class GameScene extends Phaser.Scene {
     waitForFlights(() => {
       if (win) {
         playSfx(this, SFX.win);
+        this.fireworks();
         this.tweens.add({
           targets: [...this.drones.values()],
           scale: `*=1.25`,
@@ -657,6 +658,38 @@ export class GameScene extends Phaser.Scene {
         this.time.delayedCall(500, () => this.showResult(false));
       }
     });
+  }
+
+  /** 그림 완성 축하. 하늘 세 곳에서 불꽃이 터진다. 연출이라 Math.random을 쓴다. */
+  private fireworks(): void {
+    const colors = [...new Set(this.level.cues.map((c) => PALETTE[c.color]!.hex))];
+    for (let b = 0; b < 3; b++) {
+      const cx = 140 + Math.random() * (GAME_WIDTH - 280);
+      const cy = L.picture.y + 40 + Math.random() * 240;
+      const tint = colors[b % colors.length] ?? 0xfff1d6;
+      this.time.delayedCall(b * 260, () => {
+        for (let k = 0; k < 26; k++) {
+          const a = (k / 26) * Math.PI * 2 + Math.random() * 0.2;
+          const dist = 90 + Math.random() * 70;
+          const spark = this.add
+            .image(cx, cy, TextureKeys.dot)
+            .setTint(tint)
+            .setBlendMode(Phaser.BlendModes.ADD)
+            .setScale(0.5);
+          this.fxLayer.add(spark);
+          this.tweens.add({
+            targets: spark,
+            x: cx + Math.cos(a) * dist,
+            y: cy + Math.sin(a) * dist + 30,
+            scale: 0.15,
+            alpha: 0,
+            duration: 900 + Math.random() * 300,
+            ease: 'Quad.easeOut',
+            onComplete: () => spark.destroy(),
+          });
+        }
+      });
+    }
   }
 
   private showResult(win: boolean): void {
