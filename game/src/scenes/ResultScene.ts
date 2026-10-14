@@ -4,6 +4,7 @@ import { GAME_HEIGHT, GAME_WIDTH, SceneKeys, THEME } from '../config/game';
 import { applyRoundOutcome, type RoundOutcome } from '../core/progress';
 import { getServices } from '../services';
 import { playSfx } from '../services/audio';
+import { glassPanel } from '../ui/backdrop';
 import { Button } from '../ui/Button';
 
 export interface RoundResult extends RoundOutcome {
@@ -51,7 +52,7 @@ export class ResultScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.6).setOrigin(0).setInteractive();
     const panel = this.add.graphics();
-    panel.fillStyle(THEME.panel, 1).fillRoundedRect(60, 300, GAME_WIDTH - 120, 720, 36);
+    glassPanel(panel, 60, 300, GAME_WIDTH - 120, 720, 36);
 
     this.add
       .text(cx, 400, i18n.t(r.win ? (r.perfect ? 'result.perfect' : 'result.win') : 'result.lose'), {

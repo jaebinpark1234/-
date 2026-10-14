@@ -8,6 +8,8 @@ export interface SaveData {
   level: number;
   coins: number;
   removeAds: boolean;
+  /** 처음 하는 사람용 규칙 안내를 봤는지. */
+  howToSeen: boolean;
   settings: {
     sound: boolean;
     music: boolean;
@@ -38,6 +40,7 @@ export function defaultSave(): SaveData {
     level: 1,
     coins: 0,
     removeAds: false,
+    howToSeen: false,
     settings: { sound: true, music: true, haptics: true, lang: null },
     daily: { lastCompleted: null, streak: 0, best: 0 },
     cosmetics: { owned: ['default'], selected: 'default' },

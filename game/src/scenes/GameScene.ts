@@ -26,7 +26,9 @@ import {
 import { getServices } from '../services';
 import { haptic, playSfx } from '../services/audio';
 import { Button } from '../ui/Button';
-import { TextureKeys } from '../ui/textures';
+import { drawNightBackdrop, glassPanel } from '../ui/backdrop';
+import { showHowTo } from '../ui/howto';
+import { DRONE_SIZE, TextureKeys } from '../ui/textures';
 import { RoundEvents, type RoundResult } from './ResultScene';
 
 /** 화면 배치(720x1280 기준). 위에서부터 HUD → 하늘(그림) → 쇼 프로그램 → 거치대 → 상자 → 부스터. */
@@ -126,48 +128,39 @@ export class GameScene extends Phaser.Scene {
       delete (window as unknown as { __smoke?: unknown }).__smoke;
     });
     this.exposeSmokeHooks();
+    this.showFirstTimeHelp();
+  }
+
+  /** 1레벨 첫 판에는 규칙 안내, 4레벨(거치대가 처음 필요한 판)에는 한 줄 힌트. */
+  private showFirstTimeHelp(): void {
+    if (this.mode !== 'level') return;
+    const { save, i18n } = getServices();
+    if (this.levelNumber === 1 && !save.get().howToSeen) {
+      showHowTo(this, () =>
+        save.update((d) => {
+          d.howToSeen = true;
+        }),
+      );
+    }
+    if (this.levelNumber === 4) {
+      const hint = this.add
+        .text(GAME_WIDTH / 2, L.rackY - 44, i18n.t('game.rackHint'), {
+          fontFamily: THEME.font,
+          fontSize: '24px',
+          fontStyle: 'bold',
+          color: '#ffffff',
+          backgroundColor: '#4a3f9a',
+          padding: { x: 18, y: 10 },
+        })
+        .setOrigin(0.5);
+      this.tweens.add({ targets: hint, alpha: 0, delay: 4500, duration: 500, onComplete: () => hint.destroy() });
+    }
   }
 
   // ───────────────────────── 배경과 그림 격자 ─────────────────────────
 
   private drawSky(): void {
-    const g = this.add.graphics();
-    g.fillGradientStyle(0x0b1030, 0x0b1030, 0x2a1d5c, 0x2a1d5c, 1);
-    g.fillRect(0, L.skyTop, GAME_WIDTH, L.skyBottom - L.skyTop);
-    g.fillStyle(THEME.bg, 1).fillRect(0, L.skyBottom, GAME_WIDTH, 1280 - L.skyBottom);
-
-    // 별. 연출용이라 Math.random을 써도 된다.
-    for (let i = 0; i < 70; i++) {
-      const star = this.add
-        .image(Math.random() * GAME_WIDTH, L.skyTop + Math.random() * (L.skylineTop - L.skyTop), TextureKeys.dot)
-        .setScale(0.2 + Math.random() * 0.35)
-        .setAlpha(0.25 + Math.random() * 0.5);
-      this.tweens.add({
-        targets: star,
-        alpha: 0.1,
-        duration: 1200 + Math.random() * 2400,
-        yoyo: true,
-        repeat: -1,
-        delay: Math.random() * 2000,
-      });
-    }
-
-    // 도시 실루엣. 레벨 시드로 그려서 같은 레벨은 같은 풍경.
-    const rng = new Rng(this.level.seed);
-    const city = this.add.graphics();
-    let x = -10;
-    while (x < GAME_WIDTH + 10) {
-      const w = rng.int(36, 84);
-      const h = rng.int(30, 92);
-      const top = L.skyBottom - h;
-      city.fillStyle(0x10132a, 1).fillRect(x, top, w, h);
-      for (let wy = top + 8; wy < L.skyBottom - 8; wy += 14) {
-        for (let wx = x + 6; wx < x + w - 8; wx += 12) {
-          if (rng.next() < 0.28) city.fillStyle(0xffd27a, 0.55).fillRect(wx, wy, 5, 7);
-        }
-      }
-      x += w + rng.int(0, 6);
-    }
+    drawNightBackdrop(this, L.skyBottom, this.level.seed);
   }
 
   private cellSize = 0;
@@ -184,7 +177,7 @@ export class GameScene extends Phaser.Scene {
     // 칸 위치를 희미한 점으로. 그림 모양이 드러나지 않게 빈칸까지 전부 찍는다.
     for (let i = 0; i < width * height; i++) {
       const p = this.cellPos(i);
-      this.add.image(p.x, p.y, TextureKeys.dot).setScale(0.35).setAlpha(0.13);
+      this.add.image(p.x, p.y, TextureKeys.dot).setScale(0.22).setAlpha(0.16);
     }
   }
 
@@ -206,6 +199,7 @@ export class GameScene extends Phaser.Scene {
         fontSize: '36px',
         fontStyle: 'bold',
         color: THEME.text,
+        shadow: { offsetX: 0, offsetY: 3, color: 'rgba(0,0,0,0.5)', blur: 6, fill: true },
       })
       .setOrigin(0.5);
     this.coinText = this.add
@@ -319,51 +313,74 @@ export class GameScene extends Phaser.Scene {
     const ph = this.packHeight();
     const cw = this.crateWidth();
     const cue = currentCue(this.level, s);
+    let hinted = false;
 
-    // 상자
+    // 상자: 바닥에 그림자, 뒤판, 안쪽 홈, 앞쪽 받침과 발사대 불빛
     for (let i = 0; i < s.crates.length; i++) {
       const x = this.crateX(i);
-      const bg = this.add.graphics();
+      const g = this.add.graphics();
       const panelTop = L.crateBase - this.maxDepth * ph;
-      bg.fillStyle(THEME.panel, 1).fillRoundedRect(
-        x - cw / 2 + 4,
-        panelTop - 14,
-        cw - 8,
-        L.crateBase - panelTop + 28,
-        16,
-      );
-      this.boardLayer.add(bg);
+      const left = x - cw / 2 + 4;
+      const w = cw - 8;
+      const h = L.crateBase - panelTop + 28;
+      g.fillStyle(0x000000, 0.4).fillEllipse(x, L.crateBase + 30, w + 10, 22);
+      g.fillStyle(0x2a3060, 1).fillRoundedRect(left, panelTop - 14, w, h, 16);
+      g.fillStyle(0x0f1230, 1).fillRoundedRect(left + 6, panelTop - 8, w - 12, h - 26, 11);
+      g.lineStyle(2, 0xa0a8ff, 0.18).strokeRoundedRect(left, panelTop - 14, w, h, 16);
+      g.fillStyle(0x3b4382, 1).fillRoundedRect(left - 2, L.crateBase + 4, w + 4, 18, 8);
+      g.fillStyle(0x1c2048, 1).fillRect(left + 2, L.crateBase + 16, w - 4, 6);
+      g.fillStyle(0x8f95ff, 0.8).fillRect(left + 10, L.crateBase + 8, w - 20, 3);
+      this.boardLayer.add(g);
       const crate = s.crates[i]!;
       crate.forEach((pack, j) => {
         const pos = this.packPos(i, j);
-        const img = this.packImage(pack, pos.x, pos.y, cw - 16, ph - 4);
+        const img = this.packImage(pack, pos.x, pos.y, cw - 18, ph - 2);
         this.boardLayer.add(img);
       });
       const top = topOf(s, i);
       if (top && cue && top.color === cue.color && this.gen.params.kind === 'tutorial') {
         const pos = this.packPos(i, crate.length - 1);
         const ring = this.add.graphics();
-        ring.lineStyle(4, 0xffffff, 1).strokeRoundedRect(pos.x - cw / 2 + 4, pos.y - ph / 2 - 2, cw - 8, ph + 4, 10);
+        ring.lineStyle(4, 0xffffff, 1).strokeRoundedRect(pos.x - cw / 2 + 6, pos.y - ph / 2 - 2, cw - 12, ph + 4, 10);
         this.tweens.add({ targets: ring, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
         this.boardLayer.add(ring);
+        // 누를 곳을 손가락 하나로만 가리킨다.
+        if (!hinted && !this.finished) {
+          hinted = true;
+          const finger = this.add
+            .image(pos.x + 8, pos.y + 4, TextureKeys.finger)
+            .setOrigin(0.36, 0)
+            .setScale(0.62);
+          this.tweens.add({
+            targets: finger,
+            y: finger.y + 16,
+            duration: 420,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+          this.boardLayer.add(finger);
+        }
       }
     }
 
-    // 거치대
+    // 거치대: 바닥에 파인 홈
     const warn = s.rack.length >= s.rackCapacity - 1;
     for (let k = 0; k < s.rackCapacity; k++) {
       const x = this.rackSlotX(k);
       const slot = this.add.graphics();
+      const sx = x - RACK_SLOT.w / 2;
+      const sy = L.rackY - RACK_SLOT.h / 2;
+      slot.fillStyle(0xffffff, 0.06).fillRoundedRect(sx - 2, sy - 2, RACK_SLOT.w + 4, RACK_SLOT.h + 6, 12);
+      slot.fillStyle(0x070816, 1).fillRoundedRect(sx, sy, RACK_SLOT.w, RACK_SLOT.h, 10);
+      slot.fillStyle(0x000000, 0.5).fillRoundedRect(sx + 3, sy + 2, RACK_SLOT.w - 6, 8, 4);
       slot
-        .fillStyle(0x0f1222, 1)
-        .fillRoundedRect(x - RACK_SLOT.w / 2, L.rackY - RACK_SLOT.h / 2, RACK_SLOT.w, RACK_SLOT.h, 10);
-      slot
-        .lineStyle(3, warn ? THEME.danger : 0x3a3f5c, 1)
-        .strokeRoundedRect(x - RACK_SLOT.w / 2, L.rackY - RACK_SLOT.h / 2, RACK_SLOT.w, RACK_SLOT.h, 10);
+        .lineStyle(3, warn ? THEME.danger : 0x3d4378, warn ? 1 : 0.9)
+        .strokeRoundedRect(sx, sy, RACK_SLOT.w, RACK_SLOT.h, 10);
       this.boardLayer.add(slot);
     }
     s.rack.forEach((pack, k) => {
-      const img = this.packImage(pack, this.rackSlotX(k), L.rackY, RACK_SLOT.w - 6, RACK_SLOT.h - 4);
+      const img = this.packImage(pack, this.rackSlotX(k), L.rackY - 2, RACK_SLOT.w - 6, RACK_SLOT.h);
       if (this.arriving.has(pack.id)) img.setAlpha(0);
       this.rackSprites.set(pack.id, img);
       this.boardLayer.add(img);
@@ -371,14 +388,13 @@ export class GameScene extends Phaser.Scene {
 
     // 쇼 프로그램: 지금 순서 + 다음 순서들
     const { i18n } = getServices();
-    const panel = this.add.graphics();
-    panel.fillStyle(THEME.panel, 1).fillRoundedRect(24, L.programY - 50, GAME_WIDTH - 48, 100, 22);
-    this.boardLayer.add(panel);
+    this.boardLayer.add(glassPanel(this.add.graphics(), 24, L.programY - 50, GAME_WIDTH - 48, 100, 22));
     this.boardLayer.add(
       this.add
         .text(110, L.programY - 36, i18n.t('game.now'), {
           fontFamily: THEME.font,
           fontSize: '20px',
+          fontStyle: 'bold',
           color: THEME.textDim,
         })
         .setOrigin(0.5),
@@ -388,9 +404,19 @@ export class GameScene extends Phaser.Scene {
       if (!c) break;
       const big = d === 0;
       const x = big ? 110 : 200 + d * 74;
+      if (big) {
+        const glow = this.add
+          .image(x, L.programY + 6, TextureKeys.drone)
+          .setTint(PALETTE[c.color]!.hex)
+          .setScale(1.3, 0.8)
+          .setAlpha(0.55)
+          .setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: glow, alpha: 0.25, duration: 700, yoyo: true, repeat: -1 });
+        this.boardLayer.add(glow);
+      }
       const img = this.add
-        .image(x, L.programY + (big ? 4 : 6), TextureKeys.pack(c.color))
-        .setDisplaySize(big ? 92 : 60, big ? 54 : 36)
+        .image(x, L.programY + (big ? 6 : 8), TextureKeys.pack(c.color))
+        .setDisplaySize(big ? 96 : 62, big ? 60 : 39)
         .setAlpha(big ? 1 : 0.85);
       this.boardLayer.add(img);
       if (big) {
@@ -399,7 +425,7 @@ export class GameScene extends Phaser.Scene {
           this.add
             .text(170, L.programY + 4, progress, {
               fontFamily: THEME.font,
-              fontSize: '28px',
+              fontSize: '30px',
               fontStyle: 'bold',
               color: THEME.text,
             })
@@ -408,7 +434,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.boardLayer.add(
           this.add
-            .text(x, L.programY + 34, `×${c.packs}`, { fontFamily: THEME.font, fontSize: '18px', color: THEME.textDim })
+            .text(x, L.programY + 36, `×${c.packs}`, { fontFamily: THEME.font, fontSize: '18px', color: THEME.textDim })
             .setOrigin(0.5),
         );
       }
@@ -418,15 +444,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private packImage(pack: Pack, x: number, y: number, w: number, h: number): PackSprite {
-    if (!pack.hidden) return this.add.image(x, y, TextureKeys.pack(pack.color)).setDisplaySize(w, h);
-    const box = this.add.container(x, y);
-    box.add(this.add.image(0, 0, TextureKeys.packHidden).setDisplaySize(w, h));
-    box.add(
-      this.add
-        .text(0, -2, '?', { fontFamily: THEME.font, fontSize: `${Math.round(h * 0.6)}px`, color: '#c9cdea' })
-        .setOrigin(0.5),
-    );
-    return box;
+    const key = pack.hidden ? TextureKeys.packHidden : TextureKeys.pack(pack.color);
+    return this.add.image(x, y, key).setDisplaySize(w, h);
   }
 
   // ───────────────────────── 입력 처리와 연출 ─────────────────────────
@@ -447,16 +466,18 @@ export class GameScene extends Phaser.Scene {
         case 'blocked':
           this.shakeRack();
           this.toast(i18n.t('game.rackFull'), THEME.danger);
+          playSfx(this, SFX.blocked);
           haptic(40);
           break;
         case 'park':
           this.arriving.add(e.pack.id);
           this.flyPackToRack(e.pack, tapPos, e.slot);
-          playSfx(this, SFX.tap);
+          playSfx(this, SFX.park);
           break;
         case 'deliver': {
           const from = e.from.kind === 'crate' ? tapPos : { x: this.rackSlotX(e.from.slot), y: L.rackY };
           this.launchDrones(e.pack.color, from, e.cells);
+          playSfx(this, SFX.launch);
           haptic(10);
           break;
         }
@@ -464,7 +485,7 @@ export class GameScene extends Phaser.Scene {
           if (e.chain > 0) {
             this.chains++;
             this.toast(i18n.t('game.chain', { n: e.chain + 1 }), THEME.accent);
-            playSfx(this, SFX.coin);
+            playSfx(this, SFX.chain);
           }
           break;
         case 'reveal':
@@ -484,7 +505,7 @@ export class GameScene extends Phaser.Scene {
   private flyPackToRack(pack: Pack, from: { x: number; y: number }, slot: number): void {
     const img = this.add
       .image(from.x, from.y, TextureKeys.pack(pack.color))
-      .setDisplaySize(RACK_SLOT.w - 6, RACK_SLOT.h - 4);
+      .setDisplaySize(RACK_SLOT.w - 6, RACK_SLOT.h);
     this.fxLayer.add(img);
     this.flights++;
     this.tweens.add({
@@ -505,7 +526,7 @@ export class GameScene extends Phaser.Scene {
   /** 팩 하나가 켜는 칸마다 드론이 곡선을 그리며 날아올라 자리를 잡는다. */
   private launchDrones(color: number, from: { x: number; y: number }, cells: number[]): void {
     const tint = PALETTE[color]!.hex;
-    const scale = (this.cellSize * 1.7) / 64;
+    const scale = (this.cellSize * 2.2) / DRONE_SIZE;
     cells.forEach((cell, k) => {
       const to = this.cellPos(cell);
       const drone = this.add
@@ -614,12 +635,13 @@ export class GameScene extends Phaser.Scene {
             this.renderBoard();
           } else {
             this.toast(i18n.t('game.guessWrong'), THEME.danger);
+            playSfx(this, SFX.wrong);
           }
           this.time.delayedCall(700, () => {
             this.tweens.add({ targets: layer, alpha: 0, duration: 250, onComplete: () => layer.destroy() });
           });
         },
-        { width: 200, height: 64, fontSize: 26, color: 0x2f3560 },
+        { width: 200, height: 64, fontSize: 26, color: 0x4a3f9a },
       );
       buttons.push(btn);
       layer.add(btn);

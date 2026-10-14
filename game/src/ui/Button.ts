@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { THEME } from '../config/game';
+import { shadeHex } from './textures';
 
 export interface ButtonOptions {
   width?: number;
@@ -36,6 +37,7 @@ export class Button extends Phaser.GameObjects.Container {
         fontSize: `${opts.fontSize ?? 44}px`,
         color: opts.textColor ?? '#ffffff',
         fontStyle: 'bold',
+        shadow: { offsetX: 0, offsetY: 2, color: 'rgba(0,0,0,0.35)', blur: 0, fill: true },
       })
       .setOrigin(0.5);
     this.add([this.bg, this.label]);
@@ -44,12 +46,19 @@ export class Button extends Phaser.GameObjects.Container {
     this.setInteractive({ useHandCursor: true });
     this.on('pointerdown', () => {
       if (!this.enabled) return;
-      scene.tweens.add({ targets: this, scale: 0.94, duration: 60 });
+      scene.tweens.add({ targets: this, scale: 0.96, duration: 60 });
+      this.bg.y = 4;
+      this.label.y = 4;
     });
-    this.on('pointerout', () => scene.tweens.add({ targets: this, scale: 1, duration: 80 }));
-    this.on('pointerup', () => {
-      if (!this.enabled) return;
+    const release = () => {
+      this.bg.y = 0;
+      this.label.y = 0;
       scene.tweens.add({ targets: this, scale: 1, duration: 80 });
+    };
+    this.on('pointerout', release);
+    this.on('pointerup', () => {
+      release();
+      if (!this.enabled) return;
       onClick();
     });
     scene.add.existing(this);
@@ -66,12 +75,16 @@ export class Button extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /** 아래쪽 두께(lip)가 보이는 입체 버튼. 눌리면 면이 lip 쪽으로 내려간다. */
   private drawBg(color: number): void {
     const r = Math.min(28, this.h / 2);
+    const lip = 8;
+    const { w, h } = this;
     this.bg.clear();
-    this.bg.fillStyle(0x000000, 0.25);
-    this.bg.fillRoundedRect(-this.w / 2, -this.h / 2 + 8, this.w, this.h, r);
-    this.bg.fillStyle(color, 1);
-    this.bg.fillRoundedRect(-this.w / 2, -this.h / 2, this.w, this.h, r);
+    this.bg.fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -h / 2 + lip + 4, w, h, r);
+    this.bg.fillStyle(shadeHex(color, -0.35), 1).fillRoundedRect(-w / 2, -h / 2 + lip, w, h, r);
+    this.bg.fillGradientStyle(shadeHex(color, 0.18), shadeHex(color, 0.18), color, color, 1);
+    this.bg.fillRoundedRect(-w / 2, -h / 2, w, h, r);
+    this.bg.fillStyle(0xffffff, 0.16).fillRoundedRect(-w / 2 + 10, -h / 2 + 5, w - 20, Math.min(22, h * 0.28), r / 2);
   }
 }

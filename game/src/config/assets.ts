@@ -17,4 +17,9 @@ export const SFX = {
   win: 'sfx.win',
   lose: 'sfx.lose',
   coin: 'sfx.coin',
+  park: 'sfx.park',
+  launch: 'sfx.launch',
+  chain: 'sfx.chain',
+  blocked: 'sfx.blocked',
+  wrong: 'sfx.wrong',
 } as const;

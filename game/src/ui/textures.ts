@@ -1,14 +1,18 @@
 import Phaser from 'phaser';
 import { PALETTE, type SymbolName } from '../core/palette';
 
-export const PACK_W = 96;
-export const PACK_H = 56;
+/** 팩 텍스처 크기(2배 해상도). 화면에서는 setDisplaySize로 줄여 쓴다. */
+export const PACK_W = 192;
+export const PACK_H = 120;
+/** 드론 빛 텍스처 한 변. 크기 계산할 때 이 값으로 나눈다. */
+export const DRONE_SIZE = 128;
 
 export const TextureKeys = {
   pack: (color: number) => `pack-${color}`,
   packHidden: 'pack-hidden',
   drone: 'drone',
   dot: 'dot',
+  finger: 'finger',
 } as const;
 
 /**
@@ -17,113 +21,243 @@ export const TextureKeys = {
  */
 export function makeGameTextures(scene: Phaser.Scene): void {
   PALETTE.forEach((c, i) => {
-    const key = TextureKeys.pack(i);
-    if (scene.textures.exists(key)) return;
-    const g = scene.make.graphics({}, false);
-    g.fillStyle(0x000000, 0.25).fillRoundedRect(0, 6, PACK_W, PACK_H - 6, 14);
-    g.fillStyle(c.hex, 1).fillRoundedRect(0, 0, PACK_W, PACK_H - 6, 14);
-    g.fillStyle(0xffffff, 0.18).fillRoundedRect(6, 4, PACK_W - 12, 12, 6);
-    drawSymbol(g, c.symbol, PACK_W / 2, (PACK_H - 6) / 2, 15, c.hex);
-    g.generateTexture(key, PACK_W, PACK_H);
-    g.destroy();
+    canvasTexture(scene, TextureKeys.pack(i), PACK_W, PACK_H, (ctx) => {
+      drawBlock(ctx, c.hex);
+      drawSymbol(ctx, c.symbol, PACK_W / 2, BLOCK_FACE_H / 2 + 2, 30, c.hex);
+    });
   });
 
-  if (!scene.textures.exists(TextureKeys.packHidden)) {
-    const g = scene.make.graphics({}, false);
-    g.fillStyle(0x000000, 0.25).fillRoundedRect(0, 6, PACK_W, PACK_H - 6, 14);
-    g.fillStyle(0x4a4f6b, 1).fillRoundedRect(0, 0, PACK_W, PACK_H - 6, 14);
-    g.lineStyle(3, 0x8a90b0, 1).strokeRoundedRect(2, 2, PACK_W - 4, PACK_H - 10, 12);
-    g.generateTexture(TextureKeys.packHidden, PACK_W, PACK_H);
-    g.destroy();
-  }
+  canvasTexture(scene, TextureKeys.packHidden, PACK_W, PACK_H, (ctx) => {
+    drawBlock(ctx, 0x5a6080);
+    ctx.font = 'bold 64px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillText('?', PACK_W / 2, BLOCK_FACE_H / 2 + 6);
+    ctx.fillStyle = '#e4e7ff';
+    ctx.fillText('?', PACK_W / 2, BLOCK_FACE_H / 2 + 2);
+  });
 
-  if (!scene.textures.exists(TextureKeys.drone)) {
-    // 가운데가 밝고 바깥으로 퍼지는 빛. 흰색으로 만들고 setTint로 색을 입힌다.
-    const size = 64;
-    const tex = scene.textures.createCanvas(TextureKeys.drone, size, size);
-    const ctx = tex?.getContext();
-    if (tex && ctx) {
-      const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      grad.addColorStop(0, 'rgba(255,255,255,1)');
-      grad.addColorStop(0.22, 'rgba(255,255,255,0.95)');
-      grad.addColorStop(0.45, 'rgba(255,255,255,0.35)');
-      grad.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, size, size);
-      tex.refresh();
-    }
-  }
+  // 가운데 하얀 점 + 바깥으로 퍼지는 빛. 흰색으로 만들고 setTint로 색을 입힌다.
+  canvasTexture(scene, TextureKeys.drone, DRONE_SIZE, DRONE_SIZE, (ctx) => {
+    const r = DRONE_SIZE / 2;
+    const grad = ctx.createRadialGradient(r, r, 0, r, r, r);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.12, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.2, 'rgba(255,255,255,0.75)');
+    grad.addColorStop(0.42, 'rgba(255,255,255,0.22)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, DRONE_SIZE, DRONE_SIZE);
+  });
 
-  if (!scene.textures.exists(TextureKeys.dot)) {
-    const g = scene.make.graphics({}, false);
-    g.fillStyle(0xffffff, 1).fillCircle(4, 4, 4);
-    g.generateTexture(TextureKeys.dot, 8, 8);
-    g.destroy();
-  }
+  canvasTexture(scene, TextureKeys.dot, 16, 16, (ctx) => {
+    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 16, 16);
+  });
+
+  // 튜토리얼 손가락. 끝이 위쪽 가운데(0.36, 0)를 가리킨다.
+  canvasTexture(scene, TextureKeys.finger, 120, 150, (ctx) => {
+    ctx.lineJoin = 'round';
+    const shape = () => {
+      ctx.beginPath();
+      ctx.roundRect(30, 6, 28, 84, 14); // 검지
+      ctx.roundRect(58, 52, 24, 46, 12);
+      ctx.roundRect(82, 58, 22, 42, 11);
+      ctx.roundRect(14, 64, 22, 40, 11); // 엄지
+      ctx.roundRect(22, 72, 84, 70, 26); // 손바닥
+    };
+    ctx.save();
+    ctx.translate(4, 6);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    shape();
+    ctx.fill();
+    ctx.restore();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#1b1d2b';
+    shape();
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    shape();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(160,170,210,0.35)';
+    ctx.beginPath();
+    ctx.roundRect(22, 118, 84, 24, 12);
+    ctx.fill();
+  });
 }
 
-/** 팩 위의 흰 기호. 색만으로 구분하지 않게 하려는 것. */
+function canvasTexture(
+  scene: Phaser.Scene,
+  key: string,
+  w: number,
+  h: number,
+  draw: (ctx: CanvasRenderingContext2D) => void,
+): void {
+  if (scene.textures.exists(key)) return;
+  const tex = scene.textures.createCanvas(key, w, h);
+  const ctx = tex?.getContext();
+  if (!tex || !ctx) return;
+  draw(ctx);
+  tex.refresh();
+}
+
+/** 0xRRGGBB에 흰색(amount>0) 또는 검은색(amount<0)을 섞은 CSS 색. */
+export function shade(hex: number, amount: number, alpha = 1): string {
+  const mix = (v: number) => Math.round(amount >= 0 ? v + (255 - v) * amount : v * (1 + amount));
+  const r = mix((hex >> 16) & 0xff);
+  const g = mix((hex >> 8) & 0xff);
+  const b = mix(hex & 0xff);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/** 같은 계산을 Phaser 색 숫자로. */
+export function shadeHex(hex: number, amount: number): number {
+  const mix = (v: number) => Math.round(amount >= 0 ? v + (255 - v) * amount : v * (1 + amount));
+  return (mix((hex >> 16) & 0xff) << 16) | (mix((hex >> 8) & 0xff) << 8) | mix(hex & 0xff);
+}
+
+const BLOCK_FACE_H = PACK_H - 22;
+
+/** 윗면과 두께가 보이는 블록. 아래쪽 22px이 옆면(그림자 쪽)이다. */
+function drawBlock(ctx: CanvasRenderingContext2D, hex: number): void {
+  const r = 26;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.roundRect(4, 14, PACK_W - 8, PACK_H - 14, r);
+  ctx.fill();
+
+  ctx.fillStyle = shade(hex, -0.38);
+  ctx.beginPath();
+  ctx.roundRect(4, 10, PACK_W - 8, PACK_H - 16, r);
+  ctx.fill();
+
+  const face = ctx.createLinearGradient(0, 4, 0, BLOCK_FACE_H);
+  face.addColorStop(0, shade(hex, 0.32));
+  face.addColorStop(0.55, shade(hex, 0));
+  face.addColorStop(1, shade(hex, -0.12));
+  ctx.fillStyle = face;
+  ctx.beginPath();
+  ctx.roundRect(4, 4, PACK_W - 8, BLOCK_FACE_H, r);
+  ctx.fill();
+
+  const gloss = ctx.createLinearGradient(0, 8, 0, 40);
+  gloss.addColorStop(0, 'rgba(255,255,255,0.45)');
+  gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gloss;
+  ctx.beginPath();
+  ctx.roundRect(16, 9, PACK_W - 32, 30, 15);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(5, 5, PACK_W - 10, BLOCK_FACE_H - 2, r - 1);
+  ctx.stroke();
+}
+
+/** 팩 위의 흰 기호. 색만으로 구분하지 않게 하려는 것. 살짝 눌린 자국처럼 아래에 그림자를 깐다. */
 function drawSymbol(
-  g: Phaser.GameObjects.Graphics,
+  ctx: CanvasRenderingContext2D,
   symbol: SymbolName,
   x: number,
   y: number,
   r: number,
   bg: number,
 ): void {
-  g.fillStyle(0xffffff, 1);
+  ctx.fillStyle = shade(bg, -0.45, 0.6);
+  symbolPath(ctx, symbol, x, y + 4, r, bg, true);
+  ctx.fillStyle = '#ffffff';
+  symbolPath(ctx, symbol, x, y, r, bg, false);
+}
+
+function symbolPath(
+  ctx: CanvasRenderingContext2D,
+  symbol: SymbolName,
+  x: number,
+  y: number,
+  r: number,
+  bg: number,
+  isShadow: boolean,
+): void {
+  const poly = (pts: [number, number][]) => {
+    ctx.beginPath();
+    pts.forEach(([px, py], i) => (i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
+    ctx.closePath();
+    ctx.fill();
+  };
+  const circle = (cx: number, cy: number, cr: number) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.fill();
+  };
   switch (symbol) {
     case 'circle':
-      g.fillCircle(x, y, r * 0.8);
+      circle(x, y, r * 0.8);
       break;
     case 'square':
-      g.fillRect(x - r * 0.75, y - r * 0.75, r * 1.5, r * 1.5);
+      ctx.beginPath();
+      ctx.roundRect(x - r * 0.75, y - r * 0.75, r * 1.5, r * 1.5, r * 0.2);
+      ctx.fill();
       break;
     case 'triangle':
-      g.fillTriangle(x, y - r, x - r, y + r * 0.8, x + r, y + r * 0.8);
+      poly([
+        [x, y - r],
+        [x - r, y + r * 0.8],
+        [x + r, y + r * 0.8],
+      ]);
       break;
     case 'diamond':
-      g.fillPoints(
-        [
-          new Phaser.Math.Vector2(x, y - r),
-          new Phaser.Math.Vector2(x + r * 0.8, y),
-          new Phaser.Math.Vector2(x, y + r),
-          new Phaser.Math.Vector2(x - r * 0.8, y),
-        ],
-        true,
-      );
+      poly([
+        [x, y - r],
+        [x + r * 0.8, y],
+        [x, y + r],
+        [x - r * 0.8, y],
+      ]);
       break;
     case 'star': {
-      const pts: Phaser.Math.Vector2[] = [];
+      const pts: [number, number][] = [];
       for (let i = 0; i < 10; i++) {
         const rad = i % 2 === 0 ? r : r * 0.45;
         const a = -Math.PI / 2 + (i * Math.PI) / 5;
-        pts.push(new Phaser.Math.Vector2(x + Math.cos(a) * rad, y + Math.sin(a) * rad));
+        pts.push([x + Math.cos(a) * rad, y + Math.sin(a) * rad]);
       }
-      g.fillPoints(pts, true);
+      poly(pts);
       break;
     }
     case 'heart':
-      g.fillCircle(x - r * 0.45, y - r * 0.25, r * 0.5);
-      g.fillCircle(x + r * 0.45, y - r * 0.25, r * 0.5);
-      g.fillTriangle(x - r * 0.93, y - r * 0.05, x + r * 0.93, y - r * 0.05, x, y + r * 0.9);
+      circle(x - r * 0.45, y - r * 0.25, r * 0.5);
+      circle(x + r * 0.45, y - r * 0.25, r * 0.5);
+      poly([
+        [x - r * 0.93, y - r * 0.05],
+        [x + r * 0.93, y - r * 0.05],
+        [x, y + r * 0.9],
+      ]);
       break;
-    case 'moon':
-      g.fillCircle(x, y, r * 0.85);
-      g.fillStyle(bg, 1).fillCircle(x + r * 0.4, y - r * 0.2, r * 0.7);
+    case 'moon': {
+      // 초승달은 안쪽을 배경색으로 덮어서 만든다. 그림자 단계에서는 덮지 않는다.
+      const fill = ctx.fillStyle;
+      circle(x, y, r * 0.85);
+      if (!isShadow) {
+        ctx.fillStyle = shade(bg, 0.05);
+        circle(x + r * 0.4, y - r * 0.2, r * 0.7);
+        ctx.fillStyle = fill;
+      }
       break;
+    }
     case 'bolt':
-      g.fillPoints(
-        [
-          new Phaser.Math.Vector2(x + r * 0.2, y - r),
-          new Phaser.Math.Vector2(x - r * 0.6, y + r * 0.15),
-          new Phaser.Math.Vector2(x - r * 0.05, y + r * 0.15),
-          new Phaser.Math.Vector2(x - r * 0.25, y + r),
-          new Phaser.Math.Vector2(x + r * 0.6, y - r * 0.15),
-          new Phaser.Math.Vector2(x + r * 0.05, y - r * 0.15),
-        ],
-        true,
-      );
+      poly([
+        [x + r * 0.2, y - r],
+        [x - r * 0.6, y + r * 0.15],
+        [x - r * 0.05, y + r * 0.15],
+        [x - r * 0.25, y + r],
+        [x + r * 0.6, y - r * 0.15],
+        [x + r * 0.05, y - r * 0.15],
+      ]);
       break;
   }
 }
