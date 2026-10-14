@@ -2,12 +2,21 @@
 
 ## 테스트 배포
 
-- 공개 주소: https://night-drone-show.tlqkfha0000.workers.dev (로그인 없이 누구나)
-- Cloudflare Worker `night-drone-show`에 정적 파일만 올린다. 교시온과 같은 계정, 같은 wrangler 직접 배포 방식이다.
-- 다시 올리기: `cd game && npm run build && npx wrangler deploy --assets dist --name night-drone-show --compatibility-date 2026-09-01`
-- wrangler 4의 `pages` 명령은 Workers로 넘기면서 패키지 설치와 설정 파일 생성을 요구해서 쓰지 않았다.
+- 공개 주소: https://night-drone-show.pages.dev (Cloudflare Pages 프로젝트 `night-drone-show`, 교시온과 같은 계정)
+- 다시 올리기: `cd game && npm run build && npx wrangler pages deploy dist --project-name night-drone-show --branch main --commit-dirty=true`
+- 프로젝트는 Cloudflare API로 만들었다. wrangler 4의 `pages project create`는 Workers로 넘기면서 패키지 설치와 설정 파일 생성을 요구한다. 업로드(`pages deploy`)는 그대로 된다.
+- 처음 잠깐 올렸던 `night-drone-show.*.workers.dev`는 계정 이름이 주소에 드러나서 지웠다.
 - claude.ai 아티팩트(주인 전용): https://claude.ai/artifact/8Wwy5Gc6eYS9hpxHqECfgm
-- beta 3: 미니멀 디자인. beta 4: 홈 화면 추가(manifest, 아이콘), 그림 완성 불꽃
+
+## 검색과 광고 (2026-10-14)
+
+- 교시온과 같은 구글 계정 값을 쓴다: `google-site-verification` 메타(F4jQ90…), 애드센스 `ca-pub-2284248733205499`
+- 메인 `index.html`: 설명, canonical, OG/트위터 카드(`og-image.png`), VideoGame 구조화 데이터, noscript 소개, 애드센스 계정 메타. 애드센스 스크립트는 게임 화면을 가리지 않게 메인에는 넣지 않았다.
+- `/about`(게임 소개와 방법), `/privacy`(개인정보처리방침)에 애드센스 스크립트. 애드센스 심사에 글 있는 페이지와 개인정보처리방침이 필요해서 만들었다.
+- `robots.txt`, `sitemap.xml`(/, /about, /privacy), `ads.txt`
+- IndexNow로 Bing·네이버에 3개 주소 제출(202). 키 파일은 `public/d056ffb3….txt`
+- 주인이 할 일: Search Console 속성 추가와 확인, 사이트맵 제출, URL 색인 요청, 애드센스 사이트 추가와 검토 요청
+- 게임 안 광고(전면, 보상형)는 애드센스 일반 광고가 아니라 H5 Games Ads(adBreak) 승인이 따로 필요하다. 아직 가짜 광고로 돌아간다.
 
 ## beta 1 (2026-10-14)
 
