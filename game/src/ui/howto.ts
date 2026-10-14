@@ -51,6 +51,8 @@ export function showHowTo(scene: Phaser.Scene, onClose: () => void): void {
   let page = 0;
   const close = () => {
     playSfx(scene, SFX.tap);
+    // 그림 애니메이션을 먼저 멈춘다. 남겨 두면 지워진 그림을 건드려 게임 루프가 멈춘다.
+    art.each((o: Phaser.GameObjects.GameObject) => scene.tweens.killTweensOf(o));
     root.destroy();
     onClose();
   };
@@ -260,10 +262,11 @@ function drawPicturePage(scene: Phaser.Scene, layer: Phaser.GameObjects.Containe
       duration: 160,
       delay: 900,
       onComplete: () => {
+        if (!q.scene) return;
         q.setTexture(q.texture.key === TextureKeys.packHidden ? TextureKeys.pack(0) : TextureKeys.packHidden);
         q.setDisplaySize(110, 52);
         q.scaleY = 0;
-        scene.tweens.add({ targets: q, displayHeight: 52, duration: 160, onComplete: showColor });
+        scene.tweens.add({ targets: q, displayHeight: 52, duration: 160, onComplete: () => q.scene && showColor() });
       },
     });
   };
