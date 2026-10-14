@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b0f1e" />
+    <meta name="description" content="드론 팩을 쇼 순서대로 띄워 밤하늘에 숨은 그림을 완성하는 무료 퍼즐 게임. 설치 없이 브라우저에서 바로 플레이." />
+    <link rel="canonical" href="https://night-drone-show.pages.dev/" />
+    <meta name="google-site-verification" content="F4jQ90iYPRYMMxDfb7SXxJRyyAUf7R9_jXDKoj4-ldQ" />
+    <meta name="google-adsense-account" content="ca-pub-2284248733205499" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="밤하늘 드론쇼" />
+    <meta property="og:title" content="밤하늘 드론쇼" />
+    <meta property="og:description" content="드론을 쇼 순서대로 띄워 숨은 그림을 완성하는 퍼즐" />
+    <meta property="og:url" content="https://night-drone-show.pages.dev/" />
+    <meta property="og:image" content="https://night-drone-show.pages.dev/og-image.png" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "밤하늘 드론쇼",
+        "alternateName": "Night Sky Drone Show",
+        "url": "https://night-drone-show.pages.dev/",
+        "image": "https://night-drone-show.pages.dev/og-image.png",
+        "description": "드론 팩을 쇼 순서대로 띄워 밤하늘에 숨은 그림을 완성하는 퍼즐 게임",
+        "genre": "Puzzle",
+        "gamePlatform": "Web browser",
+        "applicationCategory": "Game",
+        "inLanguage": ["ko", "en"],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+      }
+    </script>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="드론쇼" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&display=swap"
+    />
+    <title>밤하늘 드론쇼 - 드론으로 그림을 완성하는 퍼즐 게임</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        touch-action: none;
+        background: #0b0f1e;
+      }
+      /* iOS의 iframe 안에서는 vh가 바깥 화면 기준으로 잡혀 게임이 잘린다. 창에 고정해서 크기를 받는다. */
+      #game {
+        position: fixed;
+        inset: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <noscript>
+      <h1>밤하늘 드론쇼</h1>
+      <p>드론 팩을 쇼 순서대로 띄워 밤하늘에 숨은 그림을 완성하는 퍼즐 게임입니다. 플레이하려면 자바스크립트를 켜 주세요. <a href="./about">게임 소개와 방법</a></p>
+    </noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
